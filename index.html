@@ -3,17 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <title>baby-foot-M8</title>
+    <link rel="icon" href="data:,">
     <style>
       html, body {
         margin: 0;
         padding: 0;
         overflow: hidden;
+        background: #000;
         height: 100%;
-        background-color: #000;
       }
-      canvas {
-        display: block;
-      }
+      canvas { display: block; }
       .loading {
         position: fixed;
         inset: 0;
@@ -22,14 +21,14 @@
         justify-content: center;
         color: #0ff;
         font-family: sans-serif;
-        font-size: 1.2em;
         letter-spacing: 1px;
       }
     </style>
   </head>
   <body>
-    <div class="loading" id="loading">chargement scène 3d...</div>
+    <div class="loading" id="loading">Loading 3D Scene...</div>
 
+    <!-- ✅ All imports from full URLs -->
     <script type="module">
       import * as THREE from 'https://unpkg.com/three@0.164.0/build/three.module.js';
       import { OrbitControls } from 'https://unpkg.com/three@0.164.0/examples/jsm/controls/OrbitControls.js';
@@ -39,14 +38,11 @@
       import { RenderPass } from 'https://unpkg.com/three@0.164.0/examples/jsm/postprocessing/RenderPass.js';
       import { UnrealBloomPass } from 'https://unpkg.com/three@0.164.0/examples/jsm/postprocessing/UnrealBloomPass.js';
 
-      // Scene setup
+      // Setup scene, camera, renderer
       const scene = new THREE.Scene();
-
-      // Camera
       const camera = new THREE.PerspectiveCamera(65, innerWidth / innerHeight, 0.1, 100);
       camera.position.set(0, 1.5, 4);
 
-      // Renderer
       const renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(innerWidth, innerHeight);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -54,19 +50,19 @@
       renderer.toneMappingExposure = 1.5;
       document.body.appendChild(renderer.domElement);
 
-      // Controls
+      // Orbit camera controls
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.dampingFactor = 0.05;
       controls.target.set(0, 1, 0);
 
-      // Lights
-      scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+      // Lighting
+      scene.add(new THREE.AmbientLight(0xffffff, 0.3));
       const dirLight = new THREE.DirectionalLight(0xffffff, 2);
       dirLight.position.set(2, 4, 2);
       scene.add(dirLight);
 
-      // Optional HDRI environment for reflections
+      // HDRI environment
       new RGBELoader().load('https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_03_1k.hdr', (hdr) => {
         hdr.mapping = THREE.EquirectangularReflectionMapping;
         scene.environment = hdr;
@@ -76,14 +72,11 @@
       const composer = new EffectComposer(renderer);
       const renderPass = new RenderPass(scene, camera);
       composer.addPass(renderPass);
-
       const bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 1.2, 0.4, 0.85);
-      bloomPass.threshold = 0;
-      bloomPass.strength = 1.5; // intensity of the glow
-      bloomPass.radius = 0.5;
+      bloomPass.strength = 1.6;
       composer.addPass(bloomPass);
 
-      // Loading GLB from Google Drive (direct download link)
+      // Load your GLB from Google Drive (direct link!)
       const loader = new GLTFLoader();
       const driveURL = 'https://drive.google.com/uc?export=download&id=1gmE0mXhHi4DWBQqRFxCVYFK5EWss1Ld3';
 
@@ -94,18 +87,16 @@
           scene.add(model);
           document.getElementById('loading').remove();
 
-          // Boost emissive parts for neon effect
+          // Add glow for emissive parts
           model.traverse((child) => {
             if (child.isMesh && child.material) {
               if (child.material.emissive) {
-                child.material.emissiveIntensity = 3.5;
+                child.material.emissiveIntensity = 4.0;
               }
-              child.castShadow = true;
-              child.receiveShadow = true;
             }
           });
 
-          // Play any animations
+          // Handle animations
           const mixer = new THREE.AnimationMixer(model);
           gltf.animations.forEach((clip) => mixer.clipAction(clip).play());
           const clock = new THREE.Clock();
@@ -121,11 +112,12 @@
           animate();
         },
         (xhr) => {
-          document.getElementById('loading').textContent = `Loading... ${Math.round((xhr.loaded / xhr.total) * 100)}%`;
+          const percent = Math.round((xhr.loaded / xhr.total) * 100);
+          document.getElementById('loading').textContent = `Loading... ${percent}%`;
         },
         (error) => {
           document.getElementById('loading').textContent = 'Error loading model';
-          console.error(error);
+          console.error('Error:', error);
         }
       );
 
