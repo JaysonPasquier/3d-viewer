@@ -91,7 +91,9 @@
 
       // Load your GLB from Google Drive (direct link!)
       const loader = new GLTFLoader();
-      const driveURL = 'https://cors-anywhere.herokuapp.com/https://drive.google.com/uc?export=download&id=1gmE0mXhHi4DWBQqRFxCVYFK5EWss1Ld3';
+      const corsfixURL = 'https://proxy.corsfix.com/?';
+      const targetURL = 'https://drive.google.com/uc?export=download&id=1gmE0mXhHi4DWBQqRFxCVYFK5EWss1Ld3';
+      const driveURL = corsfixURL + encodeURIComponent(targetURL);
 
       loader.load(
         driveURL,
