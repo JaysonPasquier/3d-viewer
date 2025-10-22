@@ -1,148 +1,147 @@
 <!DOCTYPE html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <title>baby-foot-M8</title>
-    <link rel="icon" href="data:,">
-    <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        background: #000;
-        height: 100%;
+<head>
+  <meta charset="UTF-8" />
+  <title>baby-foot-M8</title>
+  <link rel="icon" href="data:," />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #000;
+      height: 100%;
+    }
+    canvas { display: block; }
+    .loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #0ff;
+      font-family: sans-serif;
+      letter-spacing: 1px;
+    }
+  </style>
+
+  <!-- Load es-module-shims for import map support -->
+  <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+
+  <!-- Import map for resolving 'three' and 'three/addons/' specifiers -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.164.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.164.0/examples/jsm/"
       }
-      canvas { display: block; }
-      .loading {
-        position: fixed;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #0ff;
-        font-family: sans-serif;
-        letter-spacing: 1px;
-      }
-    </style>
+    }
+  </script>
+</head>
+<body>
+  <div class="loading" id="loading">Chargement Scene 3D...</div>
 
-    <!-- Load es-module-shims for import map support -->
-    <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-    <!-- Import map for resolving 'three' and 'three/addons/' specifiers -->
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "https://unpkg.com/three@0.164.0/build/three.module.js",
-          "three/addons/": "https://unpkg.com/three@0.164.0/examples/jsm/"
-        }
-      }
-    </script>
-  </head>
-  <body>
-    <div class="loading" id="loading">Chargement Scene 3D...</div>
+    // Setup scene, camera, renderer
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(65, innerWidth / innerHeight, 0.1, 100);
+    camera.position.set(0, 1.5, 4);
 
-    <!-- ✅ All imports from full URLs -->
-    <script type="module">
-      import * as THREE from 'three';
-      import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-      import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-      import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
-      import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-      import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-      import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.5;
+    document.body.appendChild(renderer.domElement);
 
-      // Setup scene, camera, renderer
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(65, innerWidth / innerHeight, 0.1, 100);
-      camera.position.set(0, 1.5, 4);
+    // Orbit camera controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.set(0, 1, 0);
 
-      const renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(innerWidth, innerHeight);
-      renderer.outputColorSpace = THREE.SRGBColorSpace;
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.5;
-      document.body.appendChild(renderer.domElement);
+    // Lighting
+    scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+    dirLight.position.set(2, 4, 2);
+    scene.add(dirLight);
 
-      // Orbit camera controls
-      const controls = new OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.05;
-      controls.target.set(0, 1, 0);
+    // HDRI environment
+    new RGBELoader().load('https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_03_1k.hdr', (hdr) => {
+      hdr.mapping = THREE.EquirectangularReflectionMapping;
+      scene.environment = hdr;
+    });
 
-      // Lighting
-      scene.add(new THREE.AmbientLight(0xffffff, 0.3));
-      const dirLight = new THREE.DirectionalLight(0xffffff, 2);
-      dirLight.position.set(2, 4, 2);
-      scene.add(dirLight);
+    // Bloom postprocessing
+    const composer = new EffectComposer(renderer);
+    const renderPass = new RenderPass(scene, camera);
+    composer.addPass(renderPass);
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 1.2, 0.4, 0.85);
+    bloomPass.strength = 1.6;
+    composer.addPass(bloomPass);
 
-      // HDRI environment
-      new RGBELoader().load('https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_03_1k.hdr', (hdr) => {
-        hdr.mapping = THREE.EquirectangularReflectionMapping;
-        scene.environment = hdr;
-      });
+    // Load GLB using Corsfix CORS proxy
+    const loader = new GLTFLoader();
+    const corsfixURL = 'https://proxy.corsfix.com/?';
+    const targetURL = 'https://drive.google.com/uc?export=download&id=1gmE0mXhHi4DWBQqRFxCVYFK5EWss1Ld3';
+    const driveURL = corsfixURL + encodeURIComponent(targetURL);
 
-      // Bloom postprocessing
-      const composer = new EffectComposer(renderer);
-      const renderPass = new RenderPass(scene, camera);
-      composer.addPass(renderPass);
-      const bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 1.2, 0.4, 0.85);
-      bloomPass.strength = 1.6;
-      composer.addPass(bloomPass);
+    loader.load(
+      driveURL,
+      (gltf) => {
+        const model = gltf.scene;
+        scene.add(model);
+        document.getElementById('loading').remove();
 
-      // Load your GLB from Google Drive (direct link!)
-      const loader = new GLTFLoader();
-      const corsfixURL = 'https://proxy.corsfix.com/?';
-      const targetURL = 'https://drive.google.com/uc?export=download&id=1gmE0mXhHi4DWBQqRFxCVYFK5EWss1Ld3';
-      const driveURL = corsfixURL + encodeURIComponent(targetURL);
-
-      loader.load(
-        driveURL,
-        (gltf) => {
-          const model = gltf.scene;
-          scene.add(model);
-          document.getElementById('loading').remove();
-
-          // Add glow for emissive parts
-          model.traverse((child) => {
-            if (child.isMesh && child.material) {
-              if (child.material.emissive) {
-                child.material.emissiveIntensity = 4.0;
-              }
+        // Add glow for emissive parts
+        model.traverse((child) => {
+          if (child.isMesh && child.material) {
+            if (child.material.emissive) {
+              child.material.emissiveIntensity = 4.0;
             }
-          });
-
-          // Handle animations
-          const mixer = new THREE.AnimationMixer(model);
-          gltf.animations.forEach((clip) => mixer.clipAction(clip).play());
-          const clock = new THREE.Clock();
-
-          // Animation loop
-          function animate() {
-            requestAnimationFrame(animate);
-            const delta = clock.getDelta();
-            mixer.update(delta);
-            controls.update();
-            composer.render();
           }
-          animate();
-        },
-        (xhr) => {
-          const percent = Math.round((xhr.loaded / xhr.total) * 100);
-          document.getElementById('loading').textContent = `Loading... ${percent}%`;
-        },
-        (error) => {
-          document.getElementById('loading').textContent = 'Error loading model';
-          console.error('Error:', error);
-        }
-      );
+        });
 
-      // Responsive resizing
-      window.addEventListener('resize', () => {
-        camera.aspect = innerWidth / innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(innerWidth, innerHeight);
-        composer.setSize(innerWidth, innerHeight);
-      });
-    </script>
-  </body>
+        // Handle animations
+        const mixer = new THREE.AnimationMixer(model);
+        gltf.animations.forEach((clip) => mixer.clipAction(clip).play());
+        const clock = new THREE.Clock();
+
+        // Animation loop
+        function animate() {
+          requestAnimationFrame(animate);
+          const delta = clock.getDelta();
+          mixer.update(delta);
+          controls.update();
+          composer.render();
+        }
+        animate();
+      },
+      (xhr) => {
+        const percent = Math.round((xhr.loaded / xhr.total) * 100);
+        document.getElementById('loading').textContent = `Loading... ${percent}%`;
+      },
+      (error) => {
+        document.getElementById('loading').textContent = 'Error loading model';
+        console.error('Error:', error);
+      }
+    );
+
+    // Responsive resizing
+    window.addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+      composer.setSize(innerWidth, innerHeight);
+    });
+  </script>
+</body>
 </html>
